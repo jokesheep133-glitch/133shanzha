@@ -134,9 +134,14 @@ const fmt = (n,d=1) => n==null?'—':Number(n).toLocaleString('zh-CN',{minimumFr
 /* 日期 Tab */
 (function(){
   const dates = DATA.archive_dates || [];
+  // 文件名映射：'2026-10-09 至 2026-10-15' -> 'report_2026-10-09_10-15.html'
+  const toFile = d => {
+    if(d.includes('至')) return 'report_' + d.split(' 至 ')[0] + '_' + d.split(' 至 ')[1].slice(5) + '.html';
+    return 'report_' + d + '.html';
+  };
   $('date-tabs').innerHTML = dates.map(d => {
     const active = d === DATA.meta.data_date ? ' active' : '';
-    return `<a href="report_${d.replace(/ /g,'_')}.html" class="date-tab${active}">${d}</a>`;
+    return `<a href="${toFile(d)}" class="date-tab${active}">${d}</a>`;
   }).join('');
 })();
 
