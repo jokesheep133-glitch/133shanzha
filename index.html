@@ -4,6 +4,61 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>window.adaptMobile = true;</script>
+<!-- 运行环境无法可靠区分 Kim，所有新生成的完整 HTML 都注入此片段。 -->
+<script src="https://static.yximgs.com/udata/pkg/fe/yoda@2.0.17.min.js"></script>
+<script>
+(function() {
+  var ua = navigator.userAgent;
+
+  function isInKimAppMobile() {
+    return /Kim\/[\d.]+/.test(ua) && /Android|iPhone|iPad|iPod/i.test(ua);
+  }
+
+  function normalizeUrl(rawUrl) {
+    try {
+      var target = new URL(rawUrl, window.location.href);
+      return ['http:', 'https:'].includes(target.protocol) ? target.href : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function openNewPage(rawUrl) {
+    var url = normalizeUrl(rawUrl);
+    if (!url) {
+      console.warn('[openNewPage] blocked invalid or unsafe URL');
+      return;
+    }
+    var invoke = window.KSYoda && window.KSYoda.invoke;
+    if (isInKimAppMobile() && invoke) {
+      try {
+        invoke('webview.open', { url: url });
+        return;
+      } catch (error) {
+        console.warn('[openNewPage] webview.open failed, using browser fallback', error);
+      }
+    }
+    var opened = window.open(url, '_blank', 'noopener,noreferrer');
+    if (opened) opened.opener = null;
+  }
+
+  function handleAnchorClick(event) {
+    var anchor = event.target && event.target.closest && event.target.closest('a[target="_blank"]');
+    if (!anchor) return;
+    var url = normalizeUrl(anchor.getAttribute('href'));
+    if (!url) {
+      event.preventDefault();
+      return;
+    }
+    event.preventDefault();
+    openNewPage(url);
+  }
+
+  if (isInKimAppMobile()) document.addEventListener('click', handleAnchorClick, true);
+  window.__openNewPage = openNewPage;
+  window.__kimOpenNewPage = openNewPage;
+})();
+</script>
 <title>服饰行业爆品榜</title>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -68,13 +123,31 @@ body{background:#EEF2F8;color:var(--g900);font-size:13px;line-height:1.6;font-fa
 <body>
 <div class="wrap">
   <div class="hdr">
-    <h1>🏆 服饰行业爆品榜</h1>
+    <div style="position:relative">
+      <h1>🏆 服饰行业爆品榜</h1>
+      <button id="guide-toggle" style="position:absolute;right:0;top:0;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 12px;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer">📖 使用指南</button>
+    </div>
     <div class="sub">每日更新昨日全平台服饰跑量商品及素材 · 供选品参考</div>
     <div class="tags">
       <span class="tag">T-1 数据</span>
       <span class="tag">11 大类目</span>
       <span class="tag">高消耗 TOP3</span>
       <span class="tag">带跑量素材</span>
+    </div>
+  </div>
+  <div id="guide-panel" style="display:none;background:#fff;border:1px solid var(--g200);border-radius:8px;padding:16px 18px;margin-bottom:14px;font-size:12px;line-height:1.8">
+    <div style="font-size:13px;font-weight:800;margin-bottom:10px;color:var(--g900)">📖 使用指南</div>
+    <div style="margin-bottom:10px">
+      <div style="font-weight:800;color:var(--g700);margin-bottom:4px">⏱ 数据口径</div>
+      <div style="color:var(--g500);padding-left:16px">· 每天中午 12:00 更新<br>· 展示的是「昨日（T-1）」的数据<br>· 数据日期 <span id="g-date"></span> · 更新于 <span id="g-time"></span></div>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-weight:800;color:var(--g700);margin-bottom:4px">📁 存档规则</div>
+      <div style="color:var(--g500);padding-left:16px">· 仅保留最近 7 天的报告<br>· 更早的报告自动下线，无法查看</div>
+    </div>
+    <div>
+      <div style="font-weight:800;color:var(--g700);margin-bottom:4px">🏆 爆品怎么选出来的</div>
+      <div style="color:var(--g500);padding-left:16px">① 按 11 个服饰一级类目分 Tab 展示<br>② 每个一级类目选 5 个二级类目：<b style="color:var(--g900)">4 个消耗最高 + 1 个起量最快</b><br>③ 每个二级类目选消耗 <b style="color:var(--g900)">TOP3 跑量商品</b><br>④ 每个商品配 <b style="color:var(--g900)">TOP3 跑量视频素材</b>，可直接点击播放</div>
     </div>
   </div>
 
@@ -170,6 +243,16 @@ const fmt = (n,d=1) => n==null?'—':Number(n).toLocaleString('zh-CN',{minimumFr
 /* 页脚 */
 (function(){
   $('footer').innerHTML = `数据时间：T-1（每日中午 12:00 更新） · 数据来源：快手电商大盘 · 数值已脱敏为区间 · 仅供选品参考<br>服饰行业爆品榜 · ${DATA.meta.data_date}`;
+
+  // 使用指南交互
+  $('g-date').textContent = DATA.meta.data_date;
+  $('g-time').textContent = DATA.meta.gen_time;
+  $('guide-toggle').addEventListener('click', function(){
+    const p = $('guide-panel');
+    const open = p.style.display !== 'none';
+    p.style.display = open ? 'none' : 'block';
+    this.textContent = open ? '📖 使用指南' : '📖 收起指南';
+  });
 })();
 </script>
 </body>
