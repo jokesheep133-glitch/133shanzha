@@ -85,8 +85,6 @@ body{background:#EEF2F8;color:var(--g900);font-size:13px;line-height:1.6;font-fa
 
   <div class="guide-banner" id="guide-banner"></div>
 
-  <div class="opp-card" id="opp-card"></div>
-
   <div style="font-size:11px;font-weight:800;color:var(--g500);margin-top:16px">⚡ 上周全服饰大盘 TOP5 速览</div>
   <div class="top5" id="top5"></div>
 
@@ -107,23 +105,6 @@ const fmt = (n,d=1) => n==null?'—':Number(n).toLocaleString('zh-CN',{minimumFr
 /* 使用指南横幅 */
 (function(){
   $('guide-banner').innerHTML = '<b>📖 使用指南：</b>每周一中午 12:00 更新近 7 天数据（数据周期 ' + DATA.meta.data_date + ' · 更新于 ' + DATA.meta.gen_time + '） · 仅保留最近 4 期存档 · 爆品筛选：11 个一级类目 → 每类 5 个二级类目（消耗 TOP4 + 起量最快 1 个）→ 每类 6 个商品配 TOP3 素材';
-})();
-
-/* 机会全景 */
-(function(){
-  const p = DATA.pano;
-  if(!p){ $('opp-card').style.display='none'; return; }
-  let html = '<div class="opp-icon">🎯</div><div class="opp-body"><div class="opp-title">本周机会全景（' + DATA.meta.data_date + '）</div>';
-  if(p.weather_signal){
-    html += '<div class="opp-text" style="margin-bottom:4px">🌡 <b>气温信号：</b>' + esc(p.weather_signal) + '</div>';
-  }
-  if(p.cat_verify && p.cat_verify.length){
-    const cv = p.cat_verify.map(c => esc(c.cat2) + ' <b style="color:#c0392b">+' + c.rate + '%</b>').join('、');
-    html += '<div class="opp-text" style="margin-bottom:4px">📈 <b>品类验证：</b>降温已在数据兑现——' + cv + '</div>';
-  }
-  html += '<div class="opp-text">💡 <b>机会提醒：</b>有保暖/冬装货盘的商家可抓住降温窗口提前备货投流，可参考下方 ' + esc(p.ref_cats) + ' 类目的跑量商品与素材。</div>';
-  html += '</div>';
-  $('opp-card').innerHTML = html;
 })();
 
 /* TOP5 */
